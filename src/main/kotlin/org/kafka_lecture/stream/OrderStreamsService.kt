@@ -46,8 +46,8 @@ class OrderStreamsService(
             val prevPeriodEnd = currentPeriodStart
             val prevPeriodStart = currentPeriodStart.minusSeconds(300)
 
-            val currentCount = countForPeriod(store, currentPeriodStart, prevPeriodEnd)
-            val prevCount = countForPeriod(store, currentPeriodStart, prevPeriodEnd)
+            val currentCount = countForPeriod(store, currentPeriodStart, currentPeriodEnd)
+            val prevCount = countForPeriod(store, prevPeriodStart, prevPeriodEnd)
 
             val changeCount = currentCount - prevCount
             val changePercentage = if (prevCount > 0) {

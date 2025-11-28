@@ -54,6 +54,11 @@ class OrderStreamProcessor(
     fun orderProcessingTopology(builder : StreamsBuilder) : Topology {
         val orderStream : KStream<String, OrderEvent> = builder.stream(ordersTopic, Consumed.with(Serdes.String(), orderEventSerde))
 
+        highValueStream(orderStream)
+        fraudStream(orderStream)
+        orderCountStatsStream(orderStream)
+        salesStatsStream(orderStream)
+
         return builder.build();
     }
 
