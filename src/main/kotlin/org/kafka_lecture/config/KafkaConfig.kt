@@ -20,7 +20,9 @@ import org.springframework.kafka.support.serializer.JsonDeserializer
 import org.springframework.kafka.support.serializer.JsonSerializer
 
 @Configuration
-class KafkaConfig {
+class KafkaConfig(
+
+) {
 
     @Value("\${spring.kafka.bootstrap-servers}")
     private lateinit var bootstrapServers: String
@@ -30,24 +32,23 @@ class KafkaConfig {
     }
 
     @Bean
-    fun orderEventConsumerFactory(): ConsumerFactory<String, OrderEvent>{
+    fun orderEventConsumerFactory(): ConsumerFactory<String, OrderEvent> {
         val props = mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
-            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java, // 직렬화
-            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java, // 역직렬화
+            ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
+            ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to ErrorHandlingDeserializer::class.java,
             ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS to StringDeserializer::class.java,
             ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS to JsonDeserializer::class.java,
             JsonDeserializer.VALUE_DEFAULT_TYPE to OrderEvent::class.java,
             JsonDeserializer.TRUSTED_PACKAGES to "*",
             JsonDeserializer.USE_TYPE_INFO_HEADERS to false
-//            ConsumerConfig.GROUP_ID_CONFIG to UUID.randomUUID().toString(),
         )
 
         return DefaultKafkaConsumerFactory(props)
     }
 
     @Bean
-    fun orderEventKafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, OrderEvent> {
+    fun orderEventKafkaListenerContainerFactory() : ConcurrentKafkaListenerContainerFactory<String, OrderEvent> {
         val factory = ConcurrentKafkaListenerContainerFactory<String, OrderEvent>()
         factory.consumerFactory = orderEventConsumerFactory()
         return factory
@@ -89,6 +90,13 @@ class KafkaConfig {
     }
 
     @Bean
+    fun cdcKafkaListenerContainerFactory(): ConcurrentKafkaListenerContainerFactory<String, String> {
+        val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
+        factory.consumerFactory = cdcConsumerFactory()
+        return factory
+    }
+
+    @Bean
     fun avroConsumerFactory(): ConsumerFactory<String, GenericRecord> {
         val props = mapOf(
             ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG to bootstrapServers,
@@ -96,8 +104,9 @@ class KafkaConfig {
             ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG to KafkaAvroDeserializer::class.java,
             AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to SCHEMA_REGISTRY_URL,
             KafkaAvroDeserializerConfig.SPECIFIC_AVRO_READER_CONFIG to false,
-            AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS to true
+            AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS to true,
         )
+
         return DefaultKafkaConsumerFactory(props)
     }
 
@@ -108,7 +117,8 @@ class KafkaConfig {
         return factory
     }
 
-    //// --------- Producer -------------
+    //// ----------- producer --------------
+
 
     @Bean
     fun orderEventProducerFactory(): ProducerFactory<String, OrderEvent> {
@@ -134,12 +144,13 @@ class KafkaConfig {
             ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG to KafkaAvroSerializer::class.java,
             AbstractKafkaSchemaSerDeConfig.SCHEMA_REGISTRY_URL_CONFIG to SCHEMA_REGISTRY_URL,
             AbstractKafkaSchemaSerDeConfig.AUTO_REGISTER_SCHEMAS to true,
-            ProducerConfig.ACKS_CONFIG to "1", // "0" : 확인X, "1" : Leader에게만 전송확인, "all" : 복제본이 있다면 복제본까지 확인
+            ProducerConfig.ACKS_CONFIG to "1", // "0", "1", "all"
             ProducerConfig.RETRIES_CONFIG to 3,
             ProducerConfig.BATCH_SIZE_CONFIG to 16384,
             ProducerConfig.LINGER_MS_CONFIG to 10,
-            ProducerConfig.COMPRESSION_TYPE_CONFIG to "snappy" // 압축 알고리즘 설정, none, lz4, gzip, zstd 알고리즘 존재
+            ProducerConfig.COMPRESSION_TYPE_CONFIG to "snappy", // none, lz4, gzip, zstd
         )
+
         return DefaultKafkaProducerFactory(props)
     }
 
@@ -147,4 +158,5 @@ class KafkaConfig {
     fun avroKafkaTemplate(): KafkaTemplate<String, GenericRecord> {
         return KafkaTemplate(avroProducerFactory())
     }
+
 }
